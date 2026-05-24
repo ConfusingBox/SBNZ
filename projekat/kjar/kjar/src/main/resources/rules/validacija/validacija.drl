@@ -1,0 +1,13 @@
+package com.ftn.sbnz.rules.validacija;
+
+import com.ftn.sbnz.model.KreditniZahtev;
+import com.ftn.sbnz.model.Status;
+
+rule "Validacija zahteva - osnovni podaci"
+when
+    $z: KreditniZahtev(status == Status.UNOS, klijent != null, iznos > 0)
+then
+    System.out.println("Validacija: Podaci su ispravni.");
+    $z.setStatus(Status.VALIDIRANO);
+    update($z); //obavezno obavestiti engine o promeni
+end
