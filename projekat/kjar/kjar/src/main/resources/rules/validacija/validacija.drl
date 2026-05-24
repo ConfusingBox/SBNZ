@@ -1,0 +1,13 @@
+package rules.validacija;
+
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.KreditniZahtev;
+
+rule "Validacija ulaza"
+when
+    $z: KreditniZahtev(status == "UNOS", iznos > 0)
+    $k: Klijent(starost >= 18, starost <= 75) from $z.klijent
+then
+    modify($z) { setStatus("VALIDIRANO") }
+    System.out.println("Pravilo 1: Zahtev validiran.");
+end

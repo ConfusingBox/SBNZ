@@ -1,0 +1,15 @@
+package rules.klasifikacija;
+
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.KreditniZahtev;
+
+rule "Klasifikacija u Razred A"
+when
+    $z: KreditniZahtev(status == "IZRACUNAT_DTI", dti < 0.30)
+then
+    modify($z) {
+        setRazred("A"),
+        setStatus("ZAVRSENO")
+    }
+    System.out.println("Pravilo 3: Klijent ispunjava uslove za Razred A!");
+end
