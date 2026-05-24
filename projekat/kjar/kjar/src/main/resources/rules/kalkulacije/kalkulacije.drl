@@ -1,17 +1,18 @@
-package rules.kalkulacije;
+package com.ftn.sbnz.rules.kalkulacije;
 
-import com.ftn.sbnz.model.Klijent;
 import com.ftn.sbnz.model.KreditniZahtev;
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.Status;
 
-rule "Izracunavanje DTI pokazatelja"
+rule "Izracunaj DTI"
 when
-    $z: KreditniZahtev(status == "VALIDIRANO")
-    $k: Klijent(mesecniPrihod > 0) from $z.klijent
+    $z: KreditniZahtev(status == Status.VALIDIRANO)
+    $k: Klijent(mesecniPrihod > 0) from $z.getKlijent()
 then
-    double izracunatDti = $k.getMesecneObaveze() / $k.getMesecniPrihod();
-    modify($z) {
-        setDti(izracunatDti),
-        setStatus("IZRACUNAT_DTI")
-    }
-    System.out.println("Pravilo 2: DTI je izracunat: " + izracunatDti);
+    double dti = $k.getMesecneObaveze() / $k.getMesecniPrihod();
+    System.out.println("Kalkulacija: DTI je " + dti);
+    
+    $z.setDti(dti);
+    $z.setStatus(Status.IZRACUNAT_DTI);
+    update($z);
 end
