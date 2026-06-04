@@ -64,7 +64,7 @@ rule "Klasifikacija - Razred D"
 when
     $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
     $k: Klijent(kreditnaIstorija == KreditnaIstorija.NEPRIHVATLJIVA) from $z.getKlijent()
-    eval($z.getDti() >= 0.5 || !$z.isKolateralPostoji())
+    eval($z.getDti() >= 0.5 || !$z.isKolateralPostoji()) //spajam ova dva uslova
 then
     System.out.println("Pravilo: Klasifikacija D.");
     $z.setRazred(KreditniRazred.D);
