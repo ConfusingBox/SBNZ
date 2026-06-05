@@ -2,7 +2,7 @@ package com.ftn.sbnz.model;
 
 
 public class KreditniZahtev {
-    // Tvoja polja
+    
     private Klijent klijent;
     private double iznos;
     private int rokOtplate;
@@ -12,11 +12,8 @@ public class KreditniZahtev {
     private double dti;
     private double ltv;
     private String obrazlozenje;
-    
-    // Dodatno polje potrebno za pravila
     private boolean kolateralPostoji;
 
-    // Konstruktor
     public KreditniZahtev(Klijent klijent, double iznos, TipKredita tipKredita, int rokOtplate, boolean kolateralPostoji) {
         this.klijent = klijent;
         this.iznos = iznos;
@@ -29,7 +26,7 @@ public class KreditniZahtev {
     this.klijent = klijent;
     this.iznos = iznos;
     this.tipKredita = tipKredita;
-    this.status = Status.UNOS; // Postavljamo početni status
+    this.status = Status.UNOS; //pocetni status
 }
 
     public KreditniZahtev() {

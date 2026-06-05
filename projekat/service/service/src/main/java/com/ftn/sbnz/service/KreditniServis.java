@@ -1,6 +1,8 @@
 package com.ftn.sbnz.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.ftn.sbnz.model.Klijent;
 import com.ftn.sbnz.model.KreditnaIstorija;
+import com.ftn.sbnz.model.KreditniDogadjaj;
 import com.ftn.sbnz.model.KreditniZahtev;
 import com.ftn.sbnz.model.TipKredita;
 
@@ -39,6 +42,25 @@ public class KreditniServis {
         //ubacivanje zahteva u sesiju
         System.out.println("DEBUG: Istorija klijenta: " + marko.getKreditnaIstorija());
         System.out.println("DEBUG: Slobodan prihod: " + marko.getSlobodanPrihod());
+        //SIMULACIJA ISTORIJEE ZA CEEEEEEEP
+        List<KreditniDogadjaj> istorijaMarka = new ArrayList<>();
+        
+        //Dodajem jedan svez stecaj koji nosi 10 bodova
+        istorijaMarka.add(new KreditniDogadjaj("STECAJ", LocalDate.now().minusMonths(1)));
+        
+        //Dodajem stari odbijeni kredit
+        istorijaMarka.add(new KreditniDogadjaj("ODBIJEN_KREDIT", LocalDate.now().minusYears(1)));
+        
+        //Povezujem istoriju sa korisnikom
+        marko.setIstorija(istorijaMarka);
+        // -------------------------------------
+
+        //ubacivanje u drools sesiju
+        System.out.println("DEBUG: Istorija klijenta: " + marko.getKreditnaIstorija());
+        System.out.println("DEBUG: Slobodan prihod: " + marko.getSlobodanPrihod());
+        
+        //ubacujem i marka da bi accumulate pravilo radilo
+        kieSession.insert(marko); 
         kieSession.insert(zahtev);
 
         //okidanje svih pravila tj forward chaining

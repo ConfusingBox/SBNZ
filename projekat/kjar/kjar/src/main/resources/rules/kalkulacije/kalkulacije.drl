@@ -12,7 +12,8 @@ then
     double dti = $k.getMesecneObaveze() / $k.getMesecniPrihod();
     System.out.println("Kalkulacija: DTI je " + dti);
     
-    $z.setDti(dti);
-    $z.setStatus(Status.IZRACUNAT_DTI);
-    update($z);
+    modify($z) {
+        setDti(dti),
+        setStatus(Status.IZRACUNAT_DTI)
+    }
 end

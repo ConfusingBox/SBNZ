@@ -12,8 +12,9 @@ public class Klijent {
     private double slobodanPrihod; // Procentualna vrednost (0.0 do 1.0)
     private KreditnaIstorija kreditnaIstorija;
     private List<KreditniDogadjaj> istorija = new ArrayList<>();
+    private int ukupnoNegativnihBodova;
 
-    // Metoda koju Drools koristi direktno u pravilu
+    //Metoda koju Drools koristi direktno u pravilu
     public boolean imaStecajIliNaplatuU12Meseci() {
         LocalDate pre12Meseci = LocalDate.now().minusMonths(12);
         for (KreditniDogadjaj d : istorija) {
@@ -25,7 +26,6 @@ public class Klijent {
         return false;
     }
     
-
     public Klijent(String ime, int starost, double mesecniPrihod, double mesecneObaveze, double slobodanPrihod,
             KreditnaIstorija kreditnaIstorija, List<KreditniDogadjaj> istorija) {
         this.ime = ime;
@@ -67,41 +67,39 @@ public class Klijent {
         return istorija;
     }
 
-
     public void setIme(String ime) {
         this.ime = ime;
     }
-
 
     public void setStarost(int starost) {
         this.starost = starost;
     }
 
-
     public void setMesecniPrihod(double mesecniPrihod) {
         this.mesecniPrihod = mesecniPrihod;
     }
-
 
     public void setMesecneObaveze(double mesecneObaveze) {
         this.mesecneObaveze = mesecneObaveze;
     }
 
-
     public void setSlobodanPrihod(double slobodanPrihod) {
         this.slobodanPrihod = slobodanPrihod;
     }
-
 
     public void setKreditnaIstorija(KreditnaIstorija kreditnaIstorija) {
         this.kreditnaIstorija = kreditnaIstorija;
     }
 
-
     public void setIstorija(List<KreditniDogadjaj> istorija) {
         this.istorija = istorija;
     }
 
+    public int getUkupnoNegativnihBodova() {
+        return ukupnoNegativnihBodova;
+    }
 
-    
+    public void setUkupnoNegativnihBodova(int ukupnoNegativnihBodova) {
+        this.ukupnoNegativnihBodova = ukupnoNegativnihBodova;
+    }
 }
