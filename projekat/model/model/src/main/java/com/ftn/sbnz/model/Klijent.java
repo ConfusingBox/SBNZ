@@ -3,6 +3,7 @@ package com.ftn.sbnz.model;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Klijent {
     private String ime;
@@ -16,8 +17,7 @@ public class Klijent {
 
     //Metoda koju Drools koristi direktno u pravilu
     public boolean imaStecajIliNaplatuU12Meseci() {
-        LocalDate pre12Meseci = LocalDate.now().minusMonths(12);
-        for (KreditniDogadjaj d : istorija) {
+            LocalDateTime pre12Meseci = LocalDateTime.now().minusMonths(12);        for (KreditniDogadjaj d : istorija) {
             if ((d.getTipDogadjaja().equals("STECAJ") || d.getTipDogadjaja().equals("PRINUDNA_NAPLATA")) 
                  && d.getDatum().isAfter(pre12Meseci)) {
                 return true;

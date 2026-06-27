@@ -1,0 +1,5 @@
+INDEX VERSION 1.134+C:\Users\Leon\Desktop\Faks\8 Semestar\Sistemi bazirani na znanju\projekat\.metadata\.plugins\org.eclipse.jdt.core
+1865797976.index
+458914892.index
+3678006507.index
+1347133909.index
