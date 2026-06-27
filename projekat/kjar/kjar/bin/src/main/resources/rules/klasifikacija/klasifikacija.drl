@@ -1,0 +1,95 @@
+package com.ftn.sbnz.rules.klasifikacija;
+
+import com.ftn.sbnz.model.KreditniZahtev;
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.Status;
+import com.ftn.sbnz.model.KreditniRazred;
+import com.ftn.sbnz.model.KreditnaIstorija;
+
+//prvi prioritet, najopasniji uslovi
+rule "Klasifikacija - Razred E (Stecaj)"
+salience -200
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
+    $k: Klijent(imaStecajIliNaplatuU12Meseci() == true) from $z.getKlijent()
+then
+    System.out.println("Pravilo: Klasifikacija E - Detektovan stecaj/naplata.");
+    modify($z) {
+        setRazred(KreditniRazred.E),
+        setStatus(Status.ODBIJEN),
+        setObrazlozenje("Odbijeno: Stecaj ili prinudna naplata u poslednjih 12 meseci.")
+    }
+end
+
+//2 razred A
+rule "Klasifikacija - Razred A"
+salience -200
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, dti < 0.3)
+    $k: Klijent(kreditnaIstorija == KreditnaIstorija.ODLICNA, slobodanPrihod >= 0.3) from $z.getKlijent()
+then
+    System.out.println("Pravilo: Klasifikacija A.");
+    modify($z) {
+        setRazred(KreditniRazred.A),
+        setStatus(Status.ODOBREN),
+        setObrazlozenje("Odobreno: Odlicna istorija i prihvatljiv DTI.")
+    }
+end
+
+//3 razred B
+rule "Klasifikacija - Razred B"
+salience -200
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, dti < 0.4)
+    $k: Klijent(kreditnaIstorija == KreditnaIstorija.DOBRA, slobodanPrihod >= 0.25) from $z.getKlijent()
+then
+    System.out.println("Pravilo: Klasifikacija B.");
+    modify($z) {
+        setRazred(KreditniRazred.B),
+        setStatus(Status.ODOBREN),
+        setObrazlozenje("Odobreno: Dobra istorija i prihvatljiv DTI.")
+    }
+end
+
+//4 razred C
+rule "Klasifikacija - Razred C"
+salience -200
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, dti < 0.5)
+    $k: Klijent(kreditnaIstorija == KreditnaIstorija.LOSA) from $z.getKlijent()
+then
+    System.out.println("Pravilo: Klasifikacija C.");
+    modify($z) {
+        setRazred(KreditniRazred.C),
+        setStatus(Status.ZAVRSENO), 
+        setObrazlozenje("Uslovno odobreno: Potrebni dodatni kolaterali.")
+    }
+end
+
+//5 r azred D (bindovan $k za sigurnost)
+rule "Klasifikacija - Razred D"
+salience -200
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
+    $k: Klijent(kreditnaIstorija == KreditnaIstorija.NEPRIHVATLJIVA) from $z.getKlijent()
+    eval($z.getDti() >= 0.5 || !$z.isKolateralPostoji()) //spajam ova dva uslova
+then
+    System.out.println("Pravilo: Klasifikacija D.");
+    modify($z) {
+        setRazred(KreditniRazred.D),
+        setStatus(Status.ODBIJEN),
+        setObrazlozenje("Odbijeno: Visok DTI ili losa istorija bez kolaterala.")
+    }
+end
+
+rule "DEBUG - Zasto se ne klasifikuje"
+salience -300 // Ovo pravilo se izvrsava poslednje
+when
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
+    $k: Klijent() from $z.getKlijent()
+then
+    System.out.println("DEBUG: Pravila za klasifikaciju nisu prosla.");
+    System.out.println("DEBUG: DTI je: " + $z.getDti());
+    System.out.println("DEBUG: Istorija je: " + $k.getKreditnaIstorija());
+    System.out.println("DEBUG: Slobodan prihod je: " + $k.getSlobodanPrihod());
+end

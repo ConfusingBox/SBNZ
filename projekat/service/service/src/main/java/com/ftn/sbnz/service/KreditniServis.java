@@ -1,6 +1,6 @@
 package com.ftn.sbnz.service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime; // Promenjeno na LocalDateTime
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,60 +22,43 @@ public class KreditniServis {
     private KieContainer kieContainer;
 
     public void testirajMarka() {
-        //otvaranje nove drools sesije
         KieSession kieSession = kieContainer.newKieSession();
 
-        //inicijalizacija klijenta Marka i njegovog zahteva
-        // Kreiraj klijenta
         Klijent marko = new Klijent(); 
         marko.setIme("Marko Markovic");
         marko.setSlobodanPrihod(0.4);
         marko.setStarost(34);
         marko.setMesecniPrihod(1200.0);
         marko.setMesecneObaveze(200.0);
-        marko.setKreditnaIstorija(KreditnaIstorija.ODLICNA); // Ili ODLICNA, DOBRA...
-        marko.setIstorija(new ArrayList<>()); // Prazna lista za početak
-        KreditniZahtev zahtev = new KreditniZahtev(marko, 10000.0, TipKredita.STAMBENI); // Ovo radi
-        System.out.println("--- POKRETANJE DROOLS PRAVILA ---");
-        System.out.println("Pocetni status: " + zahtev.getStatus());
+        marko.setKreditnaIstorija(KreditnaIstorija.ODLICNA); 
+        marko.setIstorija(new ArrayList<>()); 
+        
+        KreditniZahtev zahtev = new KreditniZahtev(marko, 10000.0, TipKredita.STAMBENI); 
+        
+        System.out.println("--- POKRETANJE PRAVOG CEP DROOLS-A ---");
 
-        //ubacivanje zahteva u sesiju
-        System.out.println("DEBUG: Istorija klijenta: " + marko.getKreditnaIstorija());
-        System.out.println("DEBUG: Slobodan prihod: " + marko.getSlobodanPrihod());
-        //SIMULACIJA ISTORIJEE ZA CEEEEEEEP
         List<KreditniDogadjaj> istorijaMarka = new ArrayList<>();
+        // Koristimo LocalDateTime.now()
+        istorijaMarka.add(new KreditniDogadjaj("STECAJ", LocalDateTime.now().minusMonths(1)));
+        istorijaMarka.add(new KreditniDogadjaj("ODBIJEN_KREDIT", LocalDateTime.now().minusYears(1)));
         
-        //Dodajem jedan svez stecaj koji nosi 10 bodova
-        istorijaMarka.add(new KreditniDogadjaj("STECAJ", LocalDate.now().minusMonths(1)));
-        
-        //Dodajem stari odbijeni kredit
-        istorijaMarka.add(new KreditniDogadjaj("ODBIJEN_KREDIT", LocalDate.now().minusYears(1)));
-        
-        //Povezujem istoriju sa korisnikom
         marko.setIstorija(istorijaMarka);
-        // -------------------------------------
 
-        //ubacivanje u drools sesiju
-        System.out.println("DEBUG: Istorija klijenta: " + marko.getKreditnaIstorija());
-        System.out.println("DEBUG: Slobodan prihod: " + marko.getSlobodanPrihod());
-        
-        //ubacujem i marka da bi accumulate pravilo radilo
+        // Ubacujemo klijenta i zahtev
         kieSession.insert(marko); 
         kieSession.insert(zahtev);
 
-        //okidanje svih pravila tj forward chaining
+        // KLJUČNO ZA CEP: Ispaljujemo događaje pojedinačno u radnu memoriju (strim)
+        for (KreditniDogadjaj dogadjaj : istorijaMarka) {
+            kieSession.insert(dogadjaj);
+        }
+
         int brojOkinutihPravila = kieSession.fireAllRules();
-        
-        //zatvaranje sesije
         kieSession.dispose();
 
         System.out.println("---------------------------------");
-        System.out.println("---------------------------------");
         System.out.println("Broj izvrsenih pravila: " + brojOkinutihPravila);
         System.out.println("Krajnji status zahteva: " + zahtev.getStatus());
-        System.out.println("Kalkulisani DTI: " + zahtev.getDti());
-        System.out.println("Dodeljeni razred: " + zahtev.getRazred());
-        System.out.println("---------------------------------");
         System.out.println("---------------------------------");
     }
 }

@@ -1,13 +1,16 @@
 package com.ftn.sbnz.model;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime; // Promenjeno sa LocalDate
 
 public class KreditniDogadjaj {
-    private String tipDogadjaja; // "STECAJ", "PRINUDNA_NAPLATA", itd.
-    private LocalDate datum;
-    
-    // Konstruktor
-    public KreditniDogadjaj(String tipDogadjaja, LocalDate datum) {
+
+    private String tipDogadjaja;
+    private LocalDateTime datum; // Promenjeno na LocalDateTime
+
+    public KreditniDogadjaj() {
+    }
+
+    public KreditniDogadjaj(String tipDogadjaja, LocalDateTime datum) {
         this.tipDogadjaja = tipDogadjaja;
         this.datum = datum;
     }
@@ -20,13 +23,11 @@ public class KreditniDogadjaj {
         this.tipDogadjaja = tipDogadjaja;
     }
 
-    public LocalDate getDatum() {
+    public LocalDateTime getDatum() {
         return datum;
     }
 
-    public void setDatum(LocalDate datum) {
+    public void setDatum(LocalDateTime datum) {
         this.datum = datum;
     }
-
-    
 }

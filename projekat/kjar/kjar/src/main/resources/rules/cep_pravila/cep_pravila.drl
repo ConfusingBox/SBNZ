@@ -3,20 +3,27 @@ package com.ftn.sbnz.rules;
 import com.ftn.sbnz.model.Klijent;
 import com.ftn.sbnz.model.KreditniDogadjaj;
 import com.ftn.sbnz.model.KreditnaIstorija;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-//Pomocna klasa u Droolsu za cuvanje bodova
 declare NegativniBod
     klijent: Klijent
     bodovi: int
 end
 
-//CEP bodovanje
+// DEKLARACIJA ZA PRAVI CEP:
+declare KreditniDogadjaj
+    @role(event)
+    // Primoravamo Drools da pozove tvoju metodu i dobije cist long (milisekunde)
+    @timestamp( datum.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() )
+end
+
+// --- CEP BODOVANJE (ČIST STRIM BEZ 'FROM') ---
 
 rule "CEP - Kašnjenje do 30 dana"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_DO_30") from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_DO_30")
+    not NegativniBod(klijent == $k, bodovi == 1)
 then
     insert(new NegativniBod($k, 1));
 end
@@ -24,7 +31,8 @@ end
 rule "CEP - Kašnjenje 30-90 dana"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_30_90") from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_30_90")
+    not NegativniBod(klijent == $k, bodovi == 2)
 then
     insert(new NegativniBod($k, 2));
 end
@@ -32,7 +40,8 @@ end
 rule "CEP - Kašnjenje preko 90 dana"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_PREKO_90") from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_PREKO_90")
+    not NegativniBod(klijent == $k, bodovi == 4)
 then
     insert(new NegativniBod($k, 4));
 end
@@ -40,7 +49,8 @@ end
 rule "CEP - Prinudna naplata u poslednjih 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA", datum.isAfter(LocalDate.now().minusMonths(12))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA") over window:time(365d)
+    not NegativniBod(klijent == $k, bodovi == 10)
 then
     insert(new NegativniBod($k, 10));
 end
@@ -48,7 +58,8 @@ end
 rule "CEP - Prinudna naplata pre više od 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA", datum.isBefore(LocalDate.now().minusMonths(12))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA", datum.isBefore(LocalDateTime.now().minusMonths(12)))
+    not NegativniBod(klijent == $k, bodovi == 5)
 then
     insert(new NegativniBod($k, 5));
 end
@@ -56,7 +67,8 @@ end
 rule "CEP - Stečaj/Reprogram u poslednjih 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ", datum.isAfter(LocalDate.now().minusMonths(12))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ") over window:time(365d)
+    not NegativniBod(klijent == $k, bodovi == 10)
 then
     insert(new NegativniBod($k, 10));
 end
@@ -64,7 +76,8 @@ end
 rule "CEP - Stečaj/Reprogram pre više od 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ", datum.isBefore(LocalDate.now().minusMonths(12))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ", datum.isBefore(LocalDateTime.now().minusMonths(12)))
+    not NegativniBod(klijent == $k, bodovi == 7)
 then
     insert(new NegativniBod($k, 7));
 end
@@ -72,7 +85,8 @@ end
 rule "CEP - Odbijen kredit u poslednjih 6 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT", datum.isAfter(LocalDate.now().minusMonths(6))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT") over window:time(180d)
+    not NegativniBod(klijent == $k, bodovi == 2)
 then
     insert(new NegativniBod($k, 2));
 end
@@ -80,7 +94,8 @@ end
 rule "CEP - Odbijen kredit pre više od 6 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT", datum.isBefore(LocalDate.now().minusMonths(6))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT", datum.isBefore(LocalDateTime.now().minusMonths(6)))
+    not NegativniBod(klijent == $k, bodovi == 1)
 then
     insert(new NegativniBod($k, 1));
 end
@@ -88,17 +103,18 @@ end
 rule "CEP - Uredno izmirivanje duže od 3 godine"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRIVANJE", datum.isBefore(LocalDate.now().minusYears(3))) from $k.getIstorija()
+    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRIVANJE", datum.isBefore(LocalDateTime.now().minusYears(3)))
+    not NegativniBod(klijent == $k, bodovi == -2)
 then
     insert(new NegativniBod($k, -2)); 
 end
 
 
-//Accumulate, sabiram bodove
+// --- AKUMULACIJA I KLASIFIKACIJA ---
 
 rule "Akumulacija negativnih bodova"
     dialect "java"
-    salience -50 //izvrsava se pre same istorije
+    salience -50 
 when
     $k: Klijent()
     $suma: Number() from accumulate(
@@ -110,20 +126,15 @@ then
     if (izracunato < 0) {
         izracunato = 0;
     }
-    
     System.out.println(">> CEP Rezultat: Klijent " + $k.getIme() + " ima ukupno " + izracunato + " negativnih bodova.");
-    
     modify($k) {
         setUkupnoNegativnihBodova(izracunato)
     }
 end
 
-
-//Odredjivanje istorije na osnovu skale
-
 rule "Određivanje istorije: Odlična (0-2 boda)"
     dialect "java"
-    salience -100 //cekam akumulaciju da se zavrsi
+    salience -100 
 when
     $k: Klijent(ukupnoNegativnihBodova >= 0, ukupnoNegativnihBodova <= 2, kreditnaIstorija != KreditnaIstorija.ODLICNA)
 then
