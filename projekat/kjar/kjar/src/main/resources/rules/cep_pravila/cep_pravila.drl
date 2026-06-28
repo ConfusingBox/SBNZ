@@ -17,7 +17,7 @@ declare KreditniDogadjaj
     @timestamp( datum.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() )
 end
 
-// --- CEP BODOVANJE (ČIST STRIM BEZ 'FROM') ---
+// --- CEP BODOVANJE (ČIST STRIM) ---
 
 rule "CEP - Kašnjenje do 30 dana"
 when
@@ -58,6 +58,7 @@ end
 rule "CEP - Prinudna naplata pre više od 12 meseci"
 when
     $k: Klijent()
+    // Ograničavamo da se ne preklapa sa tekućom godinom
     $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA", datum.isBefore(LocalDateTime.now().minusMonths(12)))
     not NegativniBod(klijent == $k, bodovi == 5)
 then
@@ -67,7 +68,7 @@ end
 rule "CEP - Stečaj/Reprogram u poslednjih 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ") over window:time(365d)
+    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ_REPROGRAM") over window:time(365d)
     not NegativniBod(klijent == $k, bodovi == 10)
 then
     insert(new NegativniBod($k, 10));
@@ -76,7 +77,8 @@ end
 rule "CEP - Stečaj/Reprogram pre više od 12 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ", datum.isBefore(LocalDateTime.now().minusMonths(12)))
+    // Ograničavamo da se ne preklapa sa tekućom godinom
+    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ_REPROGRAM", datum.isBefore(LocalDateTime.now().minusMonths(12)))
     not NegativniBod(klijent == $k, bodovi == 7)
 then
     insert(new NegativniBod($k, 7));
@@ -85,7 +87,7 @@ end
 rule "CEP - Odbijen kredit u poslednjih 6 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT") over window:time(180d)
+    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_ZAHTEV") over window:time(180d)
     not NegativniBod(klijent == $k, bodovi == 2)
 then
     insert(new NegativniBod($k, 2));
@@ -94,7 +96,8 @@ end
 rule "CEP - Odbijen kredit pre više od 6 meseci"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT", datum.isBefore(LocalDateTime.now().minusMonths(6)))
+    // Ograničavamo da se ne preklapa sa tekućih 6 meseci
+    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_ZAHTEV", datum.isBefore(LocalDateTime.now().minusMonths(6)))
     not NegativniBod(klijent == $k, bodovi == 1)
 then
     insert(new NegativniBod($k, 1));
@@ -103,10 +106,10 @@ end
 rule "CEP - Uredno izmirivanje duže od 3 godine"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRIVANJE", datum.isBefore(LocalDateTime.now().minusYears(3)))
+    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRENJE_3G")
     not NegativniBod(klijent == $k, bodovi == -2)
 then
-    insert(new NegativniBod($k, -2)); 
+    insert(new NegativniBod($k, -2));
 end
 
 

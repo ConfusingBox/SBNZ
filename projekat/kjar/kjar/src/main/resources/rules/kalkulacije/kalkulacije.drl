@@ -5,6 +5,7 @@ import com.ftn.sbnz.model.Klijent;
 import com.ftn.sbnz.model.Status;
 
 rule "Izracunaj DTI"
+    salience 100
 when
     $z: KreditniZahtev(status == Status.VALIDIRANO)
     $k: Klijent(mesecniPrihod > 0) from $z.getKlijent()
@@ -15,5 +16,36 @@ then
     modify($z) {
         setDti(dti),
         setStatus(Status.IZRACUNAT_DTI)
+    }
+end
+
+rule "Izracunaj Mesecnu Ratu i Slobodan Prihod"
+    salience 90
+when
+    // Usaglašeno sa tvojim Java modelom: iznos i rokOtplate
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, $iznos: iznos, $rokOtplate: rokOtplate)
+    $k: Klijent($prihod: mesecniPrihod > 0, $obaveze: mesecneObaveze) from $z.getKlijent()
+then
+    double godisnjaKamata = 0.06;
+    double mesecnaKamata = godisnjaKamata / 12;
+    int brojMeseci = $rokOtplate * 12;
+    
+    // Formula za anuitet (mesečnu ratu)
+    double rata = $iznos * (mesecnaKamata * Math.pow(1 + mesecnaKamata, brojMeseci)) 
+                  / (Math.pow(1 + mesecnaKamata, brojMeseci) - 1);
+                  
+    if (brojMeseci <= 0) {
+        rata = $iznos;
+    }
+
+    // Slobodan mesečni prihod procenat = (prihod - postojeće obaveze - nova rata) / prihod
+    double preostaloNovca = $prihod - $obaveze - rata;
+    double slobodanPrihodProcenat = preostaloNovca / $prihod;
+
+    System.out.println("Kalkulacija: Izracunata rata iznosi " + rata + " EUR.");
+    System.out.println("Kalkulacija: Slobodan prihod klijenta je " + (slobodanPrihodProcenat * 100) + "%.");
+
+    modify($k) {
+        setSlobodanPrihod(slobodanPrihodProcenat)
     }
 end
