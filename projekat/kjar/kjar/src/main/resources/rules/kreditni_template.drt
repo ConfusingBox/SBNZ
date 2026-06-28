@@ -1,0 +1,45 @@
+template header
+tipKredita
+minPrihod
+maxDti
+maxRok
+kolateralObavezan
+minRazred
+
+package com.ftn.sbnz.rules;
+
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.KreditniZahtev;
+import com.ftn.sbnz.model.TipKredita;
+import com.ftn.sbnz.model.Status;
+import com.ftn.sbnz.model.KreditniRazred;
+import com.ftn.sbnz.model.KreditnaIstorija;
+
+template "kreditna_ogranicenja"
+
+rule "Provera uslova za tip kredita - @{tipKredita}"
+    no-loop true
+    salience -200
+when
+    // Provera zahteva: mora biti odgovarajući tip, u statusu UNOS, i hvatamo ako je rok predugačak ili fali kolateral
+    $z: KreditniZahtev(
+        tipKredita == TipKredita.@{tipKredita}, 
+        status == Status.UNOS,
+        rokOtplate > @{maxRok} || ( @{kolateralObavezan} == true && kolateralPostoji == false )
+    )
+    
+    // Provera klijenta: hvatamo ako mu je prihod mali ili mu je istorija neprihvatljiva
+    $k: Klijent(
+        this == $z.klijent,
+        mesecniPrihod < @{minPrihod} || kreditnaIstorija == KreditnaIstorija.NEPRIHVATLJIVA
+    )
+then
+    modify($z) {
+        setStatus(Status.ODBIJEN),
+        setRazred(KreditniRazred.E),
+        setObrazlozenje("Zahtev ne ispunjava minimalne parametre za tip kredita: @{tipKredita}.")
+    }
+    System.out.println(">> TEMPLATE: Kreditni zahtev za @{tipKredita} je ODBIJEN jer ne ispunjava uslove šablona.");
+end
+
+end template
