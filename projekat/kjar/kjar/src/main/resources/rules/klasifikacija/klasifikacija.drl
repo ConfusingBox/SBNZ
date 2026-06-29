@@ -23,22 +23,30 @@ end
 rule "Klasifikacija - Odobren Razred B"
     salience -200
 when
-    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, dti < 0.4)
-    $k: Klijent(kreditnaIstorija == KreditnaIstorija.DOBRA, slobodanPrihod >= 0.25) from $z.getKlijent()
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
+    $k: Klijent(slobodanPrihod >= 0.25) from $z.getKlijent()
+    eval(
+        ($k.getKreditnaIstorija() == KreditnaIstorija.ODLICNA && $z.getDti() >= 0.3 && $z.getDti() < 0.4) ||
+        ($k.getKreditnaIstorija() == KreditnaIstorija.DOBRA && $z.getDti() < 0.4)
+    )
 then
     System.out.println("Pravilo: Odobren kredit - Razred B.");
     modify($z) {
         setRazred(KreditniRazred.B),
         setStatus(Status.ODOBREN),
-        setObrazlozenje("Odobreno: Dobra kreditna istorija i stabilan DTI (Razred B).")
+        setObrazlozenje("Odobreno: Stabilan DTI i adekvatna kreditna istorija (Razred B).")
     }
 end
 
 rule "Klasifikacija - Odobren Razred C"
     salience -200
 when
-    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI, dti < 0.5)
-    $k: Klijent(kreditnaIstorija == KreditnaIstorija.LOSA) from $z.getKlijent()
+    $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
+    $k: Klijent() from $z.getKlijent()
+    eval(
+        ($k.getKreditnaIstorija() == KreditnaIstorija.LOSA && $z.getDti() < 0.5) ||
+        (($k.getKreditnaIstorija() == KreditnaIstorija.ODLICNA || $k.getKreditnaIstorija() == KreditnaIstorija.DOBRA) && $z.getDti() >= 0.4 && $z.getDti() < 0.5)
+    )
 then
     System.out.println("Pravilo: Odobren kredit - Razred C.");
     modify($z) {
@@ -52,19 +60,23 @@ rule "Klasifikacija - Odbijen Razred D"
     salience -200
 when
     $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
-    $k: Klijent(kreditnaIstorija == KreditnaIstorija.NEPRIHVATLJIVA) from $z.getKlijent()
-    eval($z.getDti() >= 0.5 || !$z.isKolateralPostoji())
+    $k: Klijent() from $z.getKlijent()
+    eval(
+        $k.getKreditnaIstorija() == KreditnaIstorija.NEPRIHVATLJIVA || 
+        $z.getDti() >= 0.5 || 
+        !$z.isKolateralPostoji()
+    )
 then
-    System.out.println("Pravilo: Odbijen kredit - Razred D.");
+    System.out.println("Pravilo: Odbijen kredit - Razred D zbg visokog DTI-ja ili lose istorije.");
     modify($z) {
         setRazred(KreditniRazred.D),
         setStatus(Status.ODBIJEN),
-        setObrazlozenje("Odbijeno: Neprihvatljiva istorija ili previsok DTI bez kolaterala (Razred D).")
+        setObrazlozenje("Odbijeno: Neprihvatljiva istorija, nedostaje kolateral ili je previsok DTI (Razred D).")
     }
 end
 
 rule "Klasifikacija - Odbijen Razred E (Stecaj)"
-    salience -200
+    salience -150
 when
     $z: KreditniZahtev(status == Status.IZRACUNAT_DTI)
     $k: Klijent(imaStecajIliNaplatuU12Meseci() == true) from $z.getKlijent()
