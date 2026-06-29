@@ -74,15 +74,15 @@
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label">Kašnjenja do 30 dana</label>
-                                    <input type="number" name="kasnjenjeDo30" class="form-control" th:value="${param.kasnjenjeDo30 != null ? param.kasnjenjeDo30 : '0'}" min="0">
+                                    <input type="number" name="kasnjenjeDo30" class="form-control" th:value="${param.kasnjenjeDo30 != null ? param.kasnjenjeDo30 : '0'}" min="0" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Kašnjenja 30–90 dana</label>
-                                    <input type="number" name="kasnjenje30Do90" class="form-control" th:value="${param.kasnjenje30Do90 != null ? param.kasnjenje30Do90 : '0'}" min="0">
+                                    <input type="number" name="kasnjenje30Do90" class="form-control" th:value="${param.kasnjenje30Do90 != null ? param.kasnjenje30Do90 : '0'}" min="0" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Kašnjenja preko 90 dana</label>
-                                    <input type="number" name="kasnjenjePreko90" class="form-control" th:value="${param.kasnjenjePreko90 != null ? param.kasnjenjePreko90 : '0'}" min="0">
+                                    <input type="number" name="kasnjenjePreko90" class="form-control" th:value="${param.kasnjenjePreko90 != null ? param.kasnjenjePreko90 : '0'}" min="0" required>
                                 </div>
                             </div>
 
@@ -92,34 +92,33 @@
                                     <label class="form-label">Prinudna naplata (Izvršenje)</label>
                                     <select name="prinudnaNaplata" class="form-select">
                                         <option value="NEMA" th:selected="${#strings.equals(param.prinudnaNaplata, 'NEMA')}">Nema istorije prinudne naplate</option>
-                                        <option value="POSLEDNJIH_12_MESECI" th:selected="${#strings.equals(param.prinudnaNaplata, 'POSLEDNJIH_12_MESECI')}">U poslednjih 12 meseci (+10 bodova)</option>
-                                        <option value="RANIJE" th:selected="${#strings.equals(param.prinudnaNaplata, 'RANIJE')}">Pre više od 12 meseci (+5 bodova)</option>
+                                        <option value="POSLEDNJIH_12_MESECI" th:selected="${#strings.equals(param.prinudnaNaplata, 'POSLEDNJIH_12_MESECI')}">Ima istorije prinudne napate (+8 bodova)</option>
+                                       
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Stečaj ili reprogram duga</label>
                                     <select name="stecajReprogram" class="form-select">
                                         <option value="NEMA" th:selected="${#strings.equals(param.stecajReprogram, 'NEMA')}">Nema istorije stečaja/reprograma</option>
-                                        <option value="POSLEDNJIH_12_MESECI" th:selected="${#strings.equals(param.stecajReprogram, 'POSLEDNJIH_12_MESECI')}">U poslednjih 12 meseci (+10 bodova)</option>
-                                        <option value="RANIJE" th:selected="${#strings.equals(param.stecajReprogram, 'RANIJE')}">Pre više od 12 meseci (+7 bodova)</option>
+                                        <option value="POSLEDNJIH_12_MESECI" th:selected="${#strings.equals(param.stecajReprogram, 'POSLEDNJIH_12_MESECI')}">Ima istorije stečaja/reprograma (+10 bodova)</option>
+                                        
                                     </select>
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Odbijeni zahtevi (zadnjih 6 mes.)</label>
-                                    <input type="number" name="odbijeniZadnjih6Mes" class="form-control" th:value="${param.odbijeniZadnjih6Mes != null ? param.odbijeniZadnjih6Mes : '0'}" min="0">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Odbijeni zahtevi (pre više od 6 mes.)</label>
-                                    <input type="number" name="odbijeniRanije" class="form-control" th:value="${param.odbijeniRanije != null ? param.odbijeniRanije : '0'}" min="0">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Uredno izmirivanje (godina)</label>
-                                    <input type="number" name="urednoGodina" class="form-control" th:value="${param.urednoGodina != null ? param.urednoGodina : '2'}" min="0">
-                                </div>
-                            </div>
+                         <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ukupno odbijenih zahteva u istoriji</label>
+                            <input type="number" name="odbijeniZadnjih6Mes" class="form-control" th:value="${param.odbijeniZadnjih6Mes != null ? param.odbijeniZadnjih6Mes : '0'}" min="0" required>
+                        </div>
+                        
+                        <input type="hidden" name="odbijeniRanije" value="0">
+
+                        <div class="col-md-6">
+                            <label class="form-label">Uredno izmirivanje (godina)</label>
+                            <input type="number" name="urednoGodina" class="form-control" th:value="${param.urednoGodina != null ? param.urednoGodina : '2'}" min="0" required>
+                        </div>
+                    </div>
 
                             <button type="submit" class="btn btn-success w-100 mt-3 fs-5 shadow-sm">Pokreni Drools Analizu</button>
                         </form>
