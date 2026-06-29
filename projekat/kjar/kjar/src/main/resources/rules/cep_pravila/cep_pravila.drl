@@ -3,23 +3,21 @@ package com.ftn.sbnz.rules;
 import com.ftn.sbnz.model.Klijent;
 import com.ftn.sbnz.model.KreditniDogadjaj;
 import com.ftn.sbnz.model.KreditnaIstorija;
+import com.ftn.sbnz.model.NegativniBod;
 import java.time.LocalDateTime;
 
 declare NegativniBod
-    klijent: Klijent
-    bodovi: int
+    @role(event)
 end
 
-// DEKLARACIJA ZA PRAVI CEP:
 declare KreditniDogadjaj
     @role(event)
-    // Primoravamo Drools da pozove tvoju metodu i dobije cist long (milisekunde)
     @timestamp( datum.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() )
 end
 
-// --- CEP BODOVANJE (ČIST STRIM) ---
+// --- CEP BODOVANJE (CIST STRIM) ---
 
-rule "CEP - Kašnjenje do 30 dana"
+rule "CEP - Kasnjenje do 30 dana"
 when
     $k: Klijent()
     $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_DO_30")
@@ -28,118 +26,85 @@ then
     insert(new NegativniBod($k, 1));
 end
 
-rule "CEP - Kašnjenje 30-90 dana"
+rule "CEP - Kasnjenje 30-90 dana"
 when
     $k: Klijent()
     $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_30_90")
-    not NegativniBod(klijent == $k, bodovi == 2)
+    not NegativniBod(klijent == $k, bodovi == 3)
 then
-    insert(new NegativniBod($k, 2));
+    insert(new NegativniBod($k, 3));
 end
 
-rule "CEP - Kašnjenje preko 90 dana"
+rule "CEP - Kasnjenje preko 90 dana"
 when
     $k: Klijent()
     $d: KreditniDogadjaj(tipDogadjaja == "KASNJENJE_PREKO_90")
-    not NegativniBod(klijent == $k, bodovi == 4)
-then
-    insert(new NegativniBod($k, 4));
-end
-
-rule "CEP - Prinudna naplata u poslednjih 12 meseci"
-when
-    $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA") over window:time(365d)
-    not NegativniBod(klijent == $k, bodovi == 10)
-then
-    insert(new NegativniBod($k, 10));
-end
-
-rule "CEP - Prinudna naplata pre više od 12 meseci"
-when
-    $k: Klijent()
-    // Ograničavamo da se ne preklapa sa tekućom godinom
-    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA", datum.isBefore(LocalDateTime.now().minusMonths(12)))
     not NegativniBod(klijent == $k, bodovi == 5)
 then
     insert(new NegativniBod($k, 5));
 end
 
-rule "CEP - Stečaj/Reprogram u poslednjih 12 meseci"
+rule "CEP - Prinudna naplata"
 when
     $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ_REPROGRAM") over window:time(365d)
+    $d: KreditniDogadjaj(tipDogadjaja == "PRINUDNA_NAPLATA")
+    not NegativniBod(klijent == $k, bodovi == 8)
+then
+    insert(new NegativniBod($k, 8));
+end
+
+rule "CEP - Stecaj ili reprogram"
+when
+    $k: Klijent()
+    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ")
     not NegativniBod(klijent == $k, bodovi == 10)
 then
     insert(new NegativniBod($k, 10));
 end
 
-rule "CEP - Stečaj/Reprogram pre više od 12 meseci"
+rule "CEP - Odbijen kredit"
 when
     $k: Klijent()
-    // Ograničavamo da se ne preklapa sa tekućom godinom
-    $d: KreditniDogadjaj(tipDogadjaja == "STECAJ_REPROGRAM", datum.isBefore(LocalDateTime.now().minusMonths(12)))
-    not NegativniBod(klijent == $k, bodovi == 7)
-then
-    insert(new NegativniBod($k, 7));
-end
-
-rule "CEP - Odbijen kredit u poslednjih 6 meseci"
-when
-    $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_ZAHTEV") over window:time(180d)
+    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_KREDIT")
     not NegativniBod(klijent == $k, bodovi == 2)
 then
     insert(new NegativniBod($k, 2));
 end
 
-rule "CEP - Odbijen kredit pre više od 6 meseci"
+rule "CEP - Uredno izmirenje (Pozitivan factor)"
 when
     $k: Klijent()
-    // Ograničavamo da se ne preklapa sa tekućih 6 meseci
-    $d: KreditniDogadjaj(tipDogadjaja == "ODBIJEN_ZAHTEV", datum.isBefore(LocalDateTime.now().minusMonths(6)))
-    not NegativniBod(klijent == $k, bodovi == 1)
+    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRIVANJE")
+    not NegativniBod(klijent == $k, bodovi == -3)
 then
-    insert(new NegativniBod($k, 1));
+    insert(new NegativniBod($k, -3));
 end
 
-rule "CEP - Uredno izmirivanje duže od 3 godine"
-when
-    $k: Klijent()
-    $d: KreditniDogadjaj(tipDogadjaja == "UREDNO_IZMIRENJE_3G")
-    not NegativniBod(klijent == $k, bodovi == -2)
-then
-    insert(new NegativniBod($k, -2));
-end
+// --- AKUMULACIJA BODOVA ---
 
-
-// --- AKUMULACIJA I KLASIFIKACIJA ---
-
-rule "Akumulacija negativnih bodova"
+rule "Suma negativnih bodova"
     dialect "java"
-    salience -50 
+    salience 10
 when
     $k: Klijent()
     $suma: Number() from accumulate(
-        NegativniBod(klijent == $k, $b : bodovi),
+        NegativniBod(klijent == $k, $b: bodovi),
         sum($b)
     )
 then
-    int izracunato = $suma.intValue();
-    if (izracunato < 0) {
-        izracunato = 0;
-    }
-    System.out.println(">> CEP Rezultat: Klijent " + $k.getIme() + " ima ukupno " + izracunato + " negativnih bodova.");
     modify($k) {
-        setUkupnoNegativnihBodova(izracunato)
+        setUkupnoNegativnihBodova($suma.intValue())
     }
+    System.out.println(">> CEP Rezultat: Klijent " + $k.getIme() + " ima ukupno " + $suma.intValue() + " negativnih bodova.");
 end
 
-rule "Određivanje istorije: Odlična (0-2 boda)"
+// --- KLASIFIKACIJA ISTORIJE ---
+
+rule "Odredjivanje istorije: Odlicna (0-2 boda)"
     dialect "java"
     salience -100 
 when
-    $k: Klijent(ukupnoNegativnihBodova >= 0, ukupnoNegativnihBodova <= 2, kreditnaIstorija != KreditnaIstorija.ODLICNA)
+    $k: Klijent(ukupnoNegativnihBodova >= 0, ukupnoNegativnihBodova <= 2, kreditnaIstorija == null || kreditnaIstorija.name() != "ODLICNA")
 then
     System.out.println(">> CEP Klasifikacija: Istorija klijenta azurirana na ODLICNA.");
     modify($k) {
@@ -147,11 +112,11 @@ then
     }
 end
 
-rule "Određivanje istorije: Dobra (3-5 bodova)"
+rule "Odredjivanje istorije: Dobra (3-5 bodova)"
     dialect "java"
     salience -100
 when
-    $k: Klijent(ukupnoNegativnihBodova >= 3, ukupnoNegativnihBodova <= 5, kreditnaIstorija != KreditnaIstorija.DOBRA)
+    $k: Klijent(ukupnoNegativnihBodova >= 3, ukupnoNegativnihBodova <= 5, kreditnaIstorija == null || kreditnaIstorija.name() != "DOBRA")
 then
     System.out.println(">> CEP Klasifikacija: Istorija klijenta azurirana na DOBRA.");
     modify($k) {
@@ -159,11 +124,11 @@ then
     }
 end
 
-rule "Određivanje istorije: Loša (6-9 bodova)"
+rule "Odredjivanje istorije: Losa (6-9 bodova)"
     dialect "java"
     salience -100
 when
-    $k: Klijent(ukupnoNegativnihBodova >= 6, ukupnoNegativnihBodova <= 9, kreditnaIstorija != KreditnaIstorija.LOSA)
+    $k: Klijent(ukupnoNegativnihBodova >= 6, ukupnoNegativnihBodova <= 9, kreditnaIstorija == null || kreditnaIstorija.name() != "LOSA")
 then
     System.out.println(">> CEP Klasifikacija: Istorija klijenta azurirana na LOSA.");
     modify($k) {
@@ -171,11 +136,11 @@ then
     }
 end
 
-rule "Određivanje istorije: Neprihvatljiva (10+ bodova)"
+rule "Odredjivanje istorije: Neprihvatljiva (10+ bodova)"
     dialect "java"
     salience -100
 when
-    $k: Klijent(ukupnoNegativnihBodova >= 10, kreditnaIstorija != KreditnaIstorija.NEPRIHVATLJIVA)
+    $k: Klijent(ukupnoNegativnihBodova >= 10, kreditnaIstorija == null || kreditnaIstorija.name() != "NEPRIHVATLJIVA")
 then
     System.out.println(">> CEP Klasifikacija: Istorija klijenta azurirana na NEPRIHVATLJIVA.");
     modify($k) {

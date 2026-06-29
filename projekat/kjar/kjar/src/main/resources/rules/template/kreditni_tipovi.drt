@@ -1,0 +1,42 @@
+template header
+tipKreditaStr
+minPrihod
+maxRok
+kolateralObavezan
+minRazred
+porukaOdbijen
+
+package com.ftn.sbnz.rules.template;
+
+import com.ftn.sbnz.model.KreditniZahtev;
+import com.ftn.sbnz.model.Klijent;
+import com.ftn.sbnz.model.Status;
+import com.ftn.sbnz.model.KreditniRazred;
+import com.ftn.sbnz.model.TipKredita;
+
+template "KreditniTipoviTemplate"
+
+rule "Template - Provera restrikcija za @{tipKreditaStr}_@{row.rowNumber}"
+    salience -400
+    no-loop true
+when
+    $z: KreditniZahtev(
+        tipKredita != null,
+        tipKredita.toString() == "@{tipKreditaStr}",
+        status.toString() != "ODBIJEN"
+    )
+    $k: Klijent(this == $z.klijent)
+    eval(
+        ($k.getMesecniPrihod() < @{minPrihod}) || 
+        (@{kolateralObavezan} == true && $z.isKolateralPostoji() == false) || 
+        ($z.getRazred() != null && $z.getRazred().ordinal() > KreditniRazred.@{minRazred}.ordinal())
+    )
+then
+    System.out.println(">>> [SABLON AKTIVIRAN] Zahtev za @{tipKreditaStr} je ODBIJEN kroz sablonsko pravilo!");
+    modify($z) {
+        setStatus(Status.ODBIJEN),
+        setObrazlozenje("@{porukaOdbijen}")
+    }
+end
+
+end template
